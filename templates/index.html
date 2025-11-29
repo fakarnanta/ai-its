@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Adventure - ITS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #a29bfe;
+            --accent: #00cec9;
+            --correct: #00b894;
+            --wrong: #d63031;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #2d3436;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 700px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        /* Header User */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #dfe6e9;
+            padding-bottom: 15px;
+        }
+        
+        .user-info { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
+        .logout-btn {
+            text-decoration: none; color: var(--wrong); font-weight: 600; font-size: 0.9rem;
+            padding: 5px 15px; border: 2px solid var(--wrong); border-radius: 20px;
+            transition: 0.3s;
+        }
+        .logout-btn:hover { background: var(--wrong); color: white; }
+
+        /* Badges */
+        .badges { display: flex; gap: 10px; margin-bottom: 20px; }
+        .badge {
+            padding: 6px 14px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; color: white; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .badge.materi { background: var(--primary); box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
+        .badge.kesulitan { background: var(--accent); box-shadow: 0 4px 10px rgba(0, 206, 201, 0.3); }
+
+        /* Soal Area */
+        .question-box {
+            font-size: 1.3rem; font-weight: 600; color: #2d3436; margin-bottom: 30px;
+            line-height: 1.6; min-height: 80px;
+        }
+
+        /* Pilihan Ganda Grid */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+
+        .option-btn {
+            background: white; border: 2px solid #dfe6e9; padding: 18px;
+            border-radius: 15px; cursor: pointer; text-align: center;
+            font-size: 1rem; font-weight: 600; color: #636e72;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .option-btn:hover {
+            transform: translateY(-3px);
+            border-color: var(--secondary);
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.15);
+            color: var(--primary);
+        }
+
+        .option-btn.selected {
+            background: var(--primary); color: white; border-color: var(--primary);
+            transform: translateY(0); box-shadow: inset 0 3px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%; padding: 16px; background: linear-gradient(to right, #00b894, #00cec9);
+            color: white; border: none; border-radius: 15px; font-size: 1.1rem;
+            font-weight: 700; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 184, 148, 0.4);
+        }
+        .btn-submit:disabled { background: #b2bec3; cursor: not-allowed; box-shadow: none; }
+        .btn-submit:hover:not(:disabled) { transform: scale(1.02); }
+
+        /* Feedback */
+        #feedback { text-align: center; font-weight: 800; margin-top: 20px; min-height: 28px; font-size: 1.1rem; }
+
+        /* Stats & Progress Bars */
+        .stats { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #dfe6e9; }
+        .stats-title { font-size: 0.9rem; color: #b2bec3; margin-bottom: 10px; font-weight: 600; }
+        
+        .mastery-item { margin-bottom: 10px; display: flex; align-items: center; font-size: 0.9rem; }
+        .mastery-name { flex: 1; font-weight: 600; color: #636e72; }
+        .progress-bg { flex: 2; background: #dfe6e9; height: 10px; border-radius: 5px; margin: 0 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s ease; }
+        .mastery-val { width: 40px; text-align: right; font-weight: 700; color: var(--primary); }
+
+        /* Responsive Mobile */
+        @media (max-width: 480px) {
+            .container { padding: 1.5rem; border-radius: 0; height: 100vh; max-width: 100%; }
+            .options-grid { grid-template-columns: 1fr; }
+            .question-box { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="user-info">👋 Hai, {{ username }}</div>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+        
+        <div id="game-area">
+            <div class="badges">
+                <span class="badge materi">{{ question.materi }}</span>
+                <span class="badge kesulitan">{{ question.kesulitan }}</span>
+            </div>
+
+            <div class="question-box" id="question-text">
+                {{ question.soal }}
+            </div>
+
+            <div class="options-grid" id="options-area">
+                {% for opt in question.opsi %}
+                <div class="option-btn" onclick="selectOption(this, '{{ opt }}')">{{ opt }}</div>
+                {% endfor %}
+            </div>
+
+            <button class="btn-submit" id="submit-btn" onclick="submitAnswer()" disabled>JAWAB SEKARANG</button>
+            <p id="feedback"></p>
+        </div>
+
+        <div class="stats">
+            <div class="stats-title">PROGRESS PENGUASAAN MATERI</div>
+            <div id="mastery-list">
+                {% for m, v in mastery.items() %}
+                <div class="mastery-item">
+                    <div class="mastery-name">{{ m }}</div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: {{ v * 100 }}%;"></div>
+                    </div>
+                    <div class="mastery-val">{{ "%.0f"|format(v * 100) }}%</div>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="margin-top: 15px; font-size: 0.75rem; color: #b2bec3; text-align: center;">
+                AI Exploration Rate (Epsilon): <span id="epsilon-val">{{ epsilon }}</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = {{ question | tojson }};
+        let selectedAnswer = null;
+
+        function selectOption(element, value) {
+            document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedAnswer = value;
+            document.getElementById('submit-btn').disabled = false;
+        }
+
+        function submitAnswer() {
+            if (!selectedAnswer) return;
+            const btn = document.getElementById('submit-btn');
+            btn.innerHTML = "Memeriksa...";
+            btn.disabled = true;
+
+            const payload = {
+                answer: selectedAnswer,
+                correct_answer: currentData.kunci,
+                materi: currentData.materi,
+                kesulitan: currentData.kesulitan,
+                state_diskrit: currentData.state_diskrit,
+                action_index: currentData.action_index
+            };
+
+            fetch('/submit_answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                const feedback = document.getElementById('feedback');
+                const opts = document.querySelectorAll('.option-btn');
+
+                // Efek Visual Jawaban
+                if(data.result === 'correct') {
+                    feedback.style.color = 'var(--correct)';
+                    feedback.innerText = "🎉 MANTAP! JAWABAN BENAR!";
+                    opts.forEach(el => {
+                        if(el.innerText === selectedAnswer) {
+                            el.style.background = "var(--correct)";
+                            el.style.color = "white";
+                            el.style.borderColor = "var(--correct)";
+                        }
+                    });
+                } else {
+                    feedback.style.color = 'var(--wrong)';
+                    feedback.innerText = "❌ Yah, Salah. Jawaban: " + data.correct_answer;
+                    opts.forEach(el => {
+                        if(el.innerText === selectedAnswer) {
+                            el.style.background = "var(--wrong)";
+                            el.style.color = "white";
+                            el.style.borderColor = "var(--wrong)";
+                        }
+                    });
+                }
+
+                // Update Stats & Progress Bar dengan Animasi
+                document.getElementById('epsilon-val').innerText = data.epsilon;
+                let masteryHtml = "";
+                for (const [key, val] of Object.entries(data.mastery)) {
+                    // Konversi float string "0.60" ke percentage integer
+                    let pct = Math.round(parseFloat(val) * 100);
+                    masteryHtml += `
+                    <div class="mastery-item">
+                        <div class="mastery-name">${key}</div>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: ${pct}%;"></div>
+                        </div>
+                        <div class="mastery-val">${pct}%</div>
+                    </div>`;
+                }
+                document.getElementById('mastery-list').innerHTML = masteryHtml;
+
+                // Delay ke soal baru
+                setTimeout(() => {
+                    updateUI(data.next_question);
+                    feedback.innerText = "";
+                    selectedAnswer = null;
+                    btn.innerHTML = "JAWAB SEKARANG";
+                }, 2000);
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('submit-btn').innerText = "Error Koneksi";
+            });
+        }
+
+        function updateUI(nextQ) {
+            currentData = nextQ;
+            
+            // Animasi Fade sederhana
+            const container = document.querySelector('.container');
+            
+            document.querySelector('.badge.materi').innerText = nextQ.materi;
+            document.querySelector('.badge.kesulitan').innerText = nextQ.kesulitan;
+            document.getElementById('question-text').innerText = nextQ.soal;
+            
+            const optionsArea = document.getElementById('options-area');
+            optionsArea.innerHTML = '';
+            
+            nextQ.opsi.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'option-btn';
+                div.innerText = opt;
+                div.onclick = () => selectOption(div, opt);
+                optionsArea.appendChild(div);
+            });
+            
+            document.getElementById('submit-btn').disabled = true;
+        }
+    </script>
+</body>
+</html>

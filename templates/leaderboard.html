@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaderboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; padding: 40px; text-align: center; color: #2d3436; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h1 { color: #fdcb6e; margin-bottom: 10px; text-shadow: 1px 1px 0 #fab1a0; }
+        .filter-box { margin-bottom: 25px; background: #f1f2f6; padding: 15px; border-radius: 15px; display: inline-block; }
+        select { padding: 10px; border-radius: 8px; border: 2px solid #dfe6e9; font-family: inherit; font-weight: 600; color: #636e72; cursor: pointer; }
+        .btn-filter { padding: 10px 20px; background: #6C5CE7; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-left: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { color: #b2bec3; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; padding: 15px; border-bottom: 2px solid #eee; }
+        td { padding: 15px; border-bottom: 1px solid #f1f2f6; font-weight: 600; }
+        .rank { width: 50px; color: #6C5CE7; font-size: 1.2rem; }
+        .rank-1 { color: #fdcb6e; font-size: 1.5rem; }
+        .rank-2 { color: #b2bec3; font-size: 1.4rem; }
+        .rank-3 { color: #e17055; font-size: 1.3rem; }
+        .points { text-align: right; color: #00b894; }
+        .back-btn { display: inline-block; margin-top: 30px; text-decoration: none; color: #636e72; font-weight: 600; transition: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ title }}</h1>
+        
+        <div class="filter-box">
+            <form action="/leaderboard" method="GET">
+                <label for="folder">Pilih Kategori:</label>
+                <select name="folder" id="folder" onchange="this.form.submit()">
+                    <option value="Global" {% if current_filter == 'Global' %}selected{% endif %}>🌍 Global (Latihan)</option>
+                    <option value="Tournament" {% if current_filter == 'Tournament' %}selected{% endif %}>⚔️ Tournament (Live)</option>
+                    {% for f in folders %}
+                    <option value="{{ f }}" {% if current_filter == f %}selected{% endif %}>📂 {{ f }}</option>
+                    {% endfor %}
+                </select>
+                <noscript><button type="submit" class="btn-filter">Lihat</button></noscript>
+            </form>
+        </div>
+
+        <table>
+            <tr><th>Rank</th><th style="text-align: left;">Username</th><th style="text-align: right;">Skor</th></tr>
+            {% for u in users %}
+            <tr>
+                <td class="rank 
+                    {% if loop.index == 1 %}rank-1{% endif %}
+                    {% if loop.index == 2 %}rank-2{% endif %}
+                    {% if loop.index == 3 %}rank-3{% endif %}
+                ">#{{ loop.index }}</td>
+                <td style="text-align: left;">{{ u.username }}</td>
+                <td class="points">{{ u.score }} PTS</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" style="padding: 30px; color: #b2bec3;">Belum ada data.</td></tr>
+            {% endfor %}
+        </table>
+        <a href="/" class="back-btn">← Kembali ke Dashboard</a>
+    </div>
+</body>
+</html>

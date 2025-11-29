@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Pilih Materi - MuridMonyet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f4f7f6; color: #2d3436; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #6C5CE7, #a29bfe); padding: 30px; border-radius: 20px; color: white; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2); display: flex; justify-content: space-between; align-items: center; }
+        .btn-back { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; color: white; text-decoration: none; font-size: 0.8rem; }
+        .folder-list { display: flex; gap: 10px; flex-wrap: wrap; }
+        .folder-item { background: #dfe6e9; padding: 10px 20px; border-radius: 10px; text-decoration: none; color: #636e72; font-weight: 600; transition: 0.2s; }
+        .folder-item:hover { background: #6C5CE7; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <div style="font-size: 1.5rem; font-weight: 700;">Pilih Materi</div>
+            </div>
+            <a href="/dashboard" class="btn-back">Kembali</a>
+        </div>
+
+        <div class="folder-list">
+            {% for file in folders %}
+            <a href="/quiz/folder/{{ file.replace('.py', '').replace('_', ' ').upper() }}" class="folder-item">{{ file }}</a>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

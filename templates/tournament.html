@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LIVE Tournament</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #2d3436; color: white; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* LOBBY STYLE */
+        #lobby { background: #636e72; padding: 30px; border-radius: 15px; }
+        .player-badge { display: block; background: #00b894; padding: 8px 15px; border-radius: 8px; margin: 5px auto; width: 80%; font-weight: bold; }
+        .host-badge { background: #fdcb6e; color: #2d3436; border: 2px solid white; } 
+        
+        /* GAME STYLE */
+        #game-area { display: none; }
+        .question-box { background: white; color: #2d3436; padding: 20px; border-radius: 10px; font-size: 1.2rem; margin: 20px 0; font-weight: 600; }
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .opt-btn { background: #0984e3; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .opt-btn:hover { background: #74b9ff; }
+        .opt-btn:disabled { background: #b2bec3; cursor: not-allowed; }
+        
+        /* HOST CONTROLS */
+        .host-controls { margin-top: 20px; padding: 15px; border-top: 2px dashed #aaa; display: none; background: rgba(0,0,0,0.2); border-radius: 10px;}
+        .btn-start { background: #e17055; color: white; border: none; padding: 12px 30px; font-weight: 800; font-size: 1.1rem; border-radius: 30px; cursor: pointer; box-shadow: 0 5px 0 #c0392b; }
+        .btn-start:active { transform: translateY(5px); box-shadow: none; }
+        .btn-next { background: #fdcb6e; color: #2d3436; border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px;}
+
+        .role-tag { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; color: #b2bec3;}
+        .live-rank { text-align: left; background: rgba(0,0,0,0.3); padding: 10px; margin-top: 5px; border-radius: 5px; display: flex; justify-content: space-between;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚔️ ARENA TOURNAMENT ⚔️</h1>
+        <div class="role-tag" id="my-role-display">Connecting...</div>
+        
+        <div id="lobby">
+            <h2>👥 Daftar Pemain</h2>
+            <div id="player-list"></div>
+            <br>
+            <p id="waiting-msg">Menunggu Host memulai game...</p>
+            
+            <div id="host-start-area" class="host-controls"> 
+                <p>👑 Kamu adalah HOST</p>
+                <button class="btn-start" onclick="startGame()">MULAI GAME ▶</button>
+            </div>
+        </div>
+
+        <div id="game-area">
+            <div style="display: flex; justify-content: space-between;">
+                <span id="q-counter">Soal -/-</span>
+                <span id="my-score">Score: 0</span>
+            </div>
+            
+            <div class="question-box" id="question-text">Siap?</div>
+            
+            <div class="options-grid" id="options-area"></div>
+            
+            <p id="feedback" style="height: 30px; font-weight: bold; font-size: 1.2rem; margin-top: 10px;"></p>
+
+            <div id="host-next-area" class="host-controls" style="display: none;">
+                <button class="btn-next" onclick="nextQuestion()">SOAL BERIKUTNYA ⏩</button>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: left;">
+                <h4>📊 Live Leaderboard:</h4>
+                <div id="live-leaderboard"></div>
+            </div>
+        </div>
+        
+        <div id="game-over" style="display: none;">
+            <h1>🏆 PERMAINAN SELESAI 🏆</h1>
+            <div id="final-leaderboard" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;"></div>
+            <br><br>
+            <a href="/" style="color: #74b9ff; text-decoration: none; font-weight: bold;">Kembali ke Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const myUsername = "{{ username }}";
+        let myRole = "player";
+        let hasAnswered = false;
+
+        socket.emit('join_tournament', {username: myUsername});
+
+        socket.on('set_role', (data) => {
+            myRole = data.role;
+            document.getElementById('my-role-display').innerText = `Status: ${myRole.toUpperCase()}`;
+            
+            if(myRole === 'host') {
+                document.getElementById('host-start-area').style.display = 'block';
+                document.getElementById('waiting-msg').style.display = 'none';
+            } else {
+                document.getElementById('host-start-area').style.display = 'none';
+                document.getElementById('waiting-msg').style.display = 'block';
+            }
+        });
+
+        socket.on('update_players', (data) => {
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            data.players.forEach(p => {
+                let cssClass = p.includes("(HOST)") ? "player-badge host-badge" : "player-badge";
+                list.innerHTML += `<div class="${cssClass}">${p}</div>`;
+            });
+        });
+
+        socket.on('new_question', (data) => {
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            if(myRole === 'host') {
+                document.getElementById('host-next-area').style.display = 'block';
+            }
+
+            document.getElementById('q-counter').innerText = `Soal ${data.nomor} / ${data.total}`;
+            document.getElementById('question-text').innerText = data.soal;
+            document.getElementById('feedback').innerText = "";
+            
+            const opts = document.getElementById('options-area');
+            opts.innerHTML = '';
+            hasAnswered = false;
+
+            data.opsi.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn';
+                btn.innerText = opt;
+                btn.onclick = () => sendAnswer(opt, btn);
+                opts.appendChild(btn);
+            });
+        });
+
+        function sendAnswer(ans, btnElement) {
+            if(hasAnswered) return;
+            hasAnswered = true;
+            document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+            btnElement.style.background = "#fdcb6e"; 
+            btnElement.style.color = "#2d3436";
+            socket.emit('submit_answer_live', {answer: ans});
+        }
+
+        socket.on('feedback', (data) => {
+            const fb = document.getElementById('feedback');
+            fb.innerText = data.msg;
+            fb.style.color = data.correct ? '#00b894' : '#d63031';
+        });
+
+        socket.on('live_score_update', (data) => {
+            const board = document.getElementById('live-leaderboard');
+            board.innerHTML = '';
+            data.players.sort((a,b) => b.score - a.score);
+            data.players.forEach((p, idx) => {
+                board.innerHTML += `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #555; padding:5px;">
+                    <span>#${idx+1} ${p.username}</span><span style="color:#fdcb6e">${p.score}</span></div>`;
+            });
+        });
+
+        socket.on('game_over', (data) => {
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('game-over').style.display = 'block';
+            const board = document.getElementById('final-leaderboard');
+            board.innerHTML = '';
+            data.leaderboard.forEach((p, idx) => {
+                let icon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : ''));
+                board.innerHTML += `<h3>${icon} ${p.username} : ${p.score} PTS</h3>`;
+            });
+        });
+
+        function startGame() { socket.emit('start_game'); }
+        function nextQuestion() { socket.emit('admin_next_question'); }
+    </script>
+</body>
+</html>

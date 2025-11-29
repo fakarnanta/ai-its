@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Quiz - ITS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #6C5CE7; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center; }
+        .badge { background: #a29bfe; color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; }
+        .question { font-size: 1.2rem; font-weight: 600; margin: 20px 0; color: #2d3436; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .opt-btn { background: #f1f2f6; border: 2px solid transparent; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: 600; color: #636e72; transition: 0.2s; }
+        .opt-btn:hover { background: #dfe6e9; }
+        .opt-btn.selected { background: #6C5CE7; color: white; }
+        .btn-action { width: 100%; padding: 15px; margin-top: 20px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .btn-submit { background: #00b894; color: white; }
+        .btn-next { background: #0984e3; color: white; display: none; }
+        .feedback { margin-top: 15px; font-weight: bold; }
+        .header-q { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .mode-label { color: #b2bec3; font-size: 0.8rem; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header-q">
+            <span class="mode-label">Mode: {{ question.mode }}</span>
+            <a href="/" style="text-decoration: none; color: #ff7675; font-weight: bold;">X Keluar</a>
+        </div>
+        <div><span class="badge">{{ question.materi }}</span> <span class="badge" style="background: #fdcb6e;">{{ question.kesulitan }}</span></div>
+        
+        <div class="question">{{ question.soal }}</div>
+        
+        <div class="options">
+            {% for opt in question.opsi %}
+            <div class="opt-btn" onclick="selectOption(this, '{{ opt }}')">{{ opt }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+        
+        <button class="btn-action btn-submit" id="submit-btn" onclick="submitAnswer()">JAWAB</button>
+        <button class="btn-action btn-next" id="next-btn" onclick="location.href=nextUrl">SOAL BERIKUTNYA ➜</button>
+    </div>
+
+    <script>
+        let selectedAnswer = null;
+        let nextUrl = "/";
+        const qId = {{ question.id }};
+        const mode = "{{ question.mode }}";
+
+        function selectOption(el, val) {
+            document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedAnswer = val;
+        }
+
+        function submitAnswer() {
+            if(!selectedAnswer) return;
+            
+            fetch('/submit_answer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    question_id: qId,
+                    answer: selectedAnswer,
+                    mode: mode
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const fb = document.getElementById('feedback');
+                const opts = document.querySelectorAll('.opt-btn');
+                
+                if(data.result === 'correct') {
+                    fb.innerHTML = `<span style="color:#00b894">BENAR! Point +${data.poin_change}</span>`;
+                    opts.forEach(b => { if(b.innerText === selectedAnswer) b.style.background = '#00b894'; b.style.color='white'; });
+                } else {
+                    fb.innerHTML = `<span style="color:#d63031">SALAH! Point ${data.poin_change}. Jawaban: ${data.correct_answer}</span>`;
+                    opts.forEach(b => { 
+                        if(b.innerText === selectedAnswer) { b.style.background = '#d63031'; b.style.color='white'; }
+                        if(b.innerText === data.correct_answer) { b.style.border = '2px solid #00b894'; }
+                    });
+                }
+
+                nextUrl = data.next_url;
+                document.getElementById('submit-btn').style.display = 'none';
+                document.getElementById('next-btn').style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>
